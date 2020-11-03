@@ -3,11 +3,13 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torchvision import transforms
 from torch.utils.data.dataset import Dataset  # For custom datasets
+from torch.utils.data import DataLoader
 from data_pytorch import Data
-from rotnet import RotNet
+from resnet_pytorch import ResNet
 import time
 import shutil
 import yaml
+import argparse
 
 parser = argparse.ArgumentParser(description='Configuration details for training/testing rotation net')
 parser.add_argument('--config', type=str, required=True)
@@ -24,38 +26,47 @@ config = yaml.load(open(args.config, 'r'), Loader=yaml.FullLoader)
 def train(train_loader, model, criterion, optimizer, epoch):
     model.train()
     for i, (input, target) in enumerate(train_loader):
-    	#TODO: use the usual pytorch implementation of training
+        optimizer.zero_grad()
+        criterion(model(input), target).backward()
+        optimizer.step()
+
 
 def validate(val_loader, model, criterion):
-	model.eval()
+    model.eval()
+    total_loss = 0
     for i, (input, target) in enumerate(val_loader):
-    	#TODO: implement the validation. Remember this is validation and not training
-    	#so some things will be different.
+        total_loss += criterion(model(input), target)
+    return total_loss / len(val_loader)
 
-def save_checkpoint(state, best_one, filename='rotationnetcheckpoint.pth.tar', filename2='rotationnetmodelbest.pth.tar'):
-	torch.save(state, filename)
-	#best_one stores whether your current checkpoint is better than the previous checkpoint
+
+def save_checkpoint(state, best_one, filename='rotationnetcheckpoint.pth.tar',
+                    filename2='rotationnetmodelbest.pth.tar'):
+    torch.save(state, filename)
+    # best_one stores whether your current checkpoint is better than the previous checkpoint
     if best_one:
         shutil.copyfile(filename, filename2)
 
+
 def main():
-	n_epochs = config["num_epochs"]
-	model = #make the model with your paramters
-	criterion = #what is your loss function
-	optimizer = #which optimizer are you using
+    n_epochs = config["num_epochs"]
+    models = [ResNet(block, layer, 4) for block, layer in ____]
+    criterion = nn.CrossEntropyLoss()
+    optimizers = [torch.optim.Adam(model.parameters()) for model in models]
 
-	train_dataset = #how will you get your dataset
-	train_loader = #how will you use pytorch's function to build a dataloader
-	val_loader = #how will you get your dataset
-	val_loader = #how will you use pytorch's function to build a dataloader
+    train_dataset = Data('/Users/kiranganeshan/nmep/hw5/data/train/')
+    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+    val_dataset = Data('/Users/kiranganeshan/nmep/hw5/data/test/')
+    val_loader = DataLoader(val_dataset, batch_size=1, shuffle=True)
 
-	 for epoch in range(n_epochs):
-	 	 #TODO: make your loop which trains and validates. Use the train() func
+    for epoch in range(n_epochs):
+        for model, optimizer in zip(models, optimizers):
+            train(train_loader, model, criterion, optimizer, epoch)
 
-	 	 #TODO: Save your checkpoint
-
-
-
+    best_loss = validate(val_loader, models[0], criterion)
+    for model in models:
+        loss = validate(val_loader, model, criterion)
+        save_checkpoint(model.state_dict(), loss < best_loss)
+        best_loss = min(loss, best_loss)
 
 
 if __name__ == "__main__":
