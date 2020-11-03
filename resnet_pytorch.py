@@ -1,10 +1,11 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from math import sqrt, floor
 
 
 class ResNet(nn.Module):
 
-    def __init__(self, block, layers, num_classes=1000):
+    def __init__(self, block, layers, num_classes=4):
         super(ResNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, 3, padding=1)
         self.bn1 = nn.BatchNorm2d(16)
@@ -15,10 +16,10 @@ class ResNet(nn.Module):
         self.reslayer3 = nn.Conv2d(32, 64, 3, padding=1, stride=2)
         self.avgpool = nn.AvgPool2d(8)
         self.fc = nn.Sequential(
-            nn.Linear(64, 16),
+            nn.Linear(64, floor(sqrt(64 * num_classes))),
             nn.ReLU(),
-            nn.Linear(16, 4),
-            nn.Softmax(4)
+            nn.Linear(floor(sqrt(64 * num_classes)), num_classes),
+            nn.Softmax(num_classes)
         )
 
     def forward(self, x):
