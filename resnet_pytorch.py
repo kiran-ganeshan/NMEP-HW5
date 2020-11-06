@@ -16,9 +16,9 @@ class ResNet(nn.Module):
         self.reslayer3 = nn.Conv2d(32, 64, 3, padding=1, stride=2)
         self.avgpool = nn.AvgPool2d(8)
         self.fc = nn.Sequential(
-            nn.Linear(64, floor(sqrt(64 * num_classes))),
+            nn.Linear(64, 1000 + floor(sqrt(64 * num_classes))),
             nn.ReLU(),
-            nn.Linear(floor(sqrt(64 * num_classes)), num_classes),
+            nn.Linear(1000 + floor(sqrt(64 * num_classes)), num_classes),
             nn.Softmax(num_classes)
         )
 
